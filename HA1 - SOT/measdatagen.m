@@ -62,7 +62,7 @@ for k = 1:K
     C = (sensormodel.range_c(:,2)-sensormodel.range_c(:,1)).*rand(measmodel.d,N_c) + sensormodel.range_c(:,1);
     
     %Total measurements are the union of object detections and clutter
-    measdata{k} = [measdata{k} C];                                                                  
+    measdata{k} = [measdata{k} C];                                                                                                                                    
 end
 
 end

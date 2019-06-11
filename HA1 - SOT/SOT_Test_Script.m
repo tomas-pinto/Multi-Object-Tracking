@@ -1,11 +1,12 @@
+clear all;
 %% Initialization
 %Choose object detection probability
-P_D = 0.6;
+P_D = 0.8;
 %Choose clutter rate
 lambda_c = 200;
 
 %% Choose linear or nonlinear scenario
-scenario_type = 'nonlinear';
+scenario_type = 'linear';
 
 %Create tracking scenario
 switch(scenario_type)
