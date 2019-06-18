@@ -95,13 +95,13 @@ classdef n_objectracker
                 
                 % Set non-diagonal elements to infinity and diagonal to the
                 % likelihood of misdetection
-                misdetect_cost = Inf * ones(n,n);
+                misdetect_cost = -Inf * ones(n,n);
                 diag_index = eye(size(misdetect_cost)) == 1;
-                misdetect_cost(diag_index) = -log(1 - sensormodel.P_D);
+                misdetect_cost(diag_index) = log(1 - sensormodel.P_D);
                 
                 % Create Detection cost matrix
                 % Dimensions: [number_objects] * [number_measurements]
-                detect_cost = Inf * ones(n,m);
+                detect_cost = -Inf * ones(n,m);
                 
                 for o = 1:n % For each object
                     %Perform Gating
@@ -112,7 +112,7 @@ classdef n_objectracker
                         %Calculate the predicted likelihood for each measurement in the gate
                         predicted_likelihood = obj.density.predictedLikelihood(states(o),z_ingate,measmodel);
                         %Update detection cost matrix
-                        detect_cost(o,ind) = -log(sensormodel.P_D)+log(sensormodel.intensity_c)-predicted_likelihood;
+                        detect_cost(o,ind) = log(sensormodel.P_D)-log(sensormodel.intensity_c)+predicted_likelihood;
                     end
                 end
                 
@@ -120,11 +120,12 @@ classdef n_objectracker
                 C = [detect_cost misdetect_cost];
                 
                 % Solve Assignment Problem using Gibbs Sampling
-                numIteration = 10;
-                k = 1;
-                [col4row,~]= assign2DByGibbs(C,numIteration,k);
+                %numIteration = 10;
+                %k = 1;
+                %[col4row,~]= assign2DByGibbs(C,numIteration,k);
                 
-                %[col4row,row4col,gain] = assign2D(C);
+                %[col4row,~,~] = assign2D(C);
+                [col4row, ~, ~, ~, ~] = assign2DByCol(C,true);
                 
                 % For each object 
                 for o = 1:n
@@ -208,10 +209,10 @@ classdef n_objectracker
                 C = [detect_cost misdetect_cost];
                 
                 % Solve Assignment Problem using Gibbs Sampling
-                numIteration = 200;
+                %numIteration = 200;
                 k = obj.reduction.M;
-                [col4rowBest,gainBest] = assign2DByGibbs(C,numIteration,k);
-                %[col4rowBest,row4colBest,gainBest] = kBest2DAssign(C,k);
+                %[col4rowBest,gainBest] = assign2DByGibbs(C,numIteration,k);
+                [col4rowBest,row4colBest,gainBest] = kBest2DAssign(C,k);
                 
                 %Normalise the weights of different data association hypotheses
                 w = normalizeLogWeights(-gainBest);
@@ -251,6 +252,183 @@ classdef n_objectracker
                     
                 end
             end          
-        end     
+        end
+        
+        function estimates = TOMHT(obj, states, Z, sensormodel, motionmodel, measmodel)
+            %TOMHT tracks n object using track-oriented multi-hypothesis tracking
+            %INPUT: obj: an instantiation of n_objectracker class
+            %       states: structure array of size (1, number of objects)
+            %       with two fields: 
+            %                x: object initial state mean --- (object state
+            %                dimension) x 1 vector 
+            %                P: object initial state covariance --- (object
+            %                state dimension) x (object state dimension)
+            %                matrix  
+            %       Z: cell array of size (total tracking time, 1), each
+            %       cell stores measurements of size (measurement
+            %       dimension) x (number of measurements at corresponding
+            %       time step)  
+            %OUTPUT:estimates: cell array of size (total tracking time, 1),
+            %       each cell stores estimated object state of size (object
+            %       state dimension) x (number of objects)
+            
+            %Calculate total tracking time
+            K = size(Z,1);
+
+            %Initialize estimates cell array
+            estimates = cell(K,1);
+
+            %Number of state dimensions
+            n_dim = length(states(1).x); 
+            
+            % Number of objects
+            n = length(states);
+            
+            % Initialize global lookup table
+            lookup_table = 1:n;
+                
+            % Initialize weights of global hypotheses
+            w = 0;
+            
+            for t = 1:K
+                
+                % Number of global hypothesis
+                n_global_hyp = size(lookup_table,1);
+                
+                % Number of measurements
+                m = length(Z{t});
+                
+                % Re-initialize new set of lookup table and weights
+                new_lookup_table = {};
+                new_w = {};
+                
+                for h = 1:n_global_hyp %For each global hypothesis    
+                    
+                    %Set non-diagonal elements to infinity and diagonal to the
+                    % likelihood of misdetection
+                    misdetect_cost = Inf * ones(n,n);
+                    diag_index = eye(size(misdetect_cost)) == 1;
+                    misdetect_cost(diag_index) = - log(1 - sensormodel.P_D);
+
+                    % Create Detection cost matrix
+                    % Dimensions: [number_objects] * [number_measurements]
+                    detect_cost = Inf * ones(n,m);
+                    
+                    for o = 1:n %For each object   
+                        
+                        %Perform Gating
+                        [~,ind] = obj.density.ellipsoidalGating(states(lookup_table(h,o)), Z{t}, measmodel, obj.gating.size);
+                        z_ingate = Z{t}(:,ind);
+                        
+                        if isempty(z_ingate) == 0                           
+                            %Create object detection hypotheses for each detection inside the gate
+                            predicted_likelihood = obj.density.predictedLikelihood(states(lookup_table(h,o)), z_ingate, measmodel);
+                            
+                            %Update detection cost matrix
+                            detect_cost(o,ind) = - log(sensormodel.P_D) ...
+                                + log(sensormodel.intensity_c)...
+                                - predicted_likelihood;                  
+                        end                         
+                    end
+                    
+                    % Create Cost Matrix
+                    C = [detect_cost misdetect_cost];
+                    
+                    % Solve Assignment Problem
+                    %numIteration = 200;
+                    k = ceil(exp(w(h))*obj.reduction.M);
+                    %[col4rowBest,gainBest] = assign2DByGibbs(C,numIteration,k);
+                    [col4rowBest,~,gainBest] = kBest2DAssign(C,k);
+                    
+                    % Assign all misdetections to zero and update global
+                    % lookup table
+                    col4rowBest(col4rowBest > m) = 0;
+                    new_lookup_table{h} = col4rowBest';
+                    
+                    % Update weights of global hypotheses 
+                    new_w{h} = -gainBest + w(h);
+                end
+                
+                % Normalize hypothesis weights across all global hypothesis
+                [new_w,~] = normalizeLogWeights(cell2mat(new_w'));
+                
+                % Initialize new global hypothesis cell
+                new_states = struct('x',[],'P',[]);
+                final_lookup_table = [];
+                
+                s = 1;
+                % Kalman Update
+                for h = 1:n_global_hyp %For each global hypothesis
+                    
+                    index_lookup_table = new_lookup_table{h};
+                    
+                    for o = 1:n
+                        
+                        indexes = unique(new_lookup_table{h}(:,o));
+                        
+                        for i = 1:length(indexes) 
+                            % Kalman Update
+                            if indexes(i) == 0 % Misdetection
+                                new_states(s) = states(lookup_table(h,o));
+                            else    
+                                % Create updated local hypothesis
+                                new_states(s) = obj.density.update(states(lookup_table(h,o)), Z{t}(:,indexes(i)), measmodel);
+                            end
+                            
+                            % Re-index lookup table
+                            rows = new_lookup_table{h}(:,o) == indexes(i);
+                            index_lookup_table(rows,o) = s;
+                            
+                            s = s + 1;
+                        end  
+                        
+                    end  
+                    
+                    % Update final lookup table 
+                    final_lookup_table = [final_lookup_table;index_lookup_table];
+                    
+                end
+                
+                % Prune lookup table 
+                [new_w,ind] = hypothesisReduction.prune(new_w, 1:1:length(new_w), obj.reduction.w_min);
+                final_lookup_table = final_lookup_table(ind,:);
+                
+                % Cap lookup table
+                [new_w,ind] = hypothesisReduction.cap(new_w, 1:1:length(new_w), obj.reduction.M);
+                final_lookup_table = final_lookup_table(ind,:);
+                
+                % Re-index lookup table
+                new_index_states = struct('x',[],'P',[]);
+                reindex_lookup_table = final_lookup_table;
+                
+                [~,~,ic] = unique([new_states.x]','rows');
+                for i = 1:max(max(final_lookup_table))
+                    reindex_lookup_table(final_lookup_table == i) = ic(i);
+                    new_index_states(ic(i)) = new_states(i);
+                end
+                
+                % Re-Normalize hypothesis weights across all global hypothesis
+                [final_w,~] = normalizeLogWeights(new_w);
+                
+                % Extract object estimate 
+                [~,bestEstimate] = max(final_w);
+                for o = 1:n
+                    estimates{t}(:,o) = new_index_states(reindex_lookup_table(bestEstimate,o)).x;
+                end
+                
+                % Predict each local hypothesis
+                for h = 1:length(new_index_states)
+                    if ~isempty(new_index_states(h).x)
+                        new_index_states(h) = obj.density.predict(new_index_states(h), motionmodel);
+                    end
+                end  
+                
+                % Update variables for next iteration
+                states = new_index_states;
+                lookup_table = reindex_lookup_table;
+                w = final_w;
+                
+            end
+        end
     end
 end
