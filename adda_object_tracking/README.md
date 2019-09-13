@@ -1,7 +1,6 @@
-# kitti2bag
-# Adda Worldmodel Server
+# aDDa Object Tracking package
 
-The Worldmodel server includes 3 packages, namely adda_object_tracking, adda_worldmodel_msgs and adda_lidar_detection.
+This ROS has the implementation of the GM-PHD filter in C++.
 
 <img src="/tracker.png"/>
 
