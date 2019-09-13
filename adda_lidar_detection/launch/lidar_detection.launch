@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="lidar_detection_node" pkg="adda_lidar_detection" type="lidar_detection_node" respawn="true" output="screen">
+    <rosparam command="load" file ="$(find adda_lidar_detection)/config/lidar_detection_config.yaml"/>
+  </node>
+</launch>

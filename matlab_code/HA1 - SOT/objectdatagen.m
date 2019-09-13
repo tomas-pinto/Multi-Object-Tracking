@@ -29,6 +29,7 @@ function objectdata = objectdatagen(groundtruth,motionmodel,ifnoisy)
 objectdata.X = cell(groundtruth.K,1);
 objectdata.N = zeros(groundtruth.K,1);
 
+%Try to switch time step and object
 for i = 1:groundtruth.K %time step
     for j = 1:groundtruth.nbirths %object
         if ((groundtruth.tbirth(j) <= i) && (groundtruth.tdeath(j) >= i))

@@ -1,0 +1,17 @@
+downsample_leaf_size: 0.4 # Voxel Grid leaf size
+
+clip_cloud: # Distances relative to velodyne frame
+  min_z: -1.3
+  max_z: 0.5
+
+ground_removal:
+  max_iter: 100 # RANSAC max iterations.
+  dist_thresh: 0.4 # Distance to the plane for a point to be an inlier.
+  deg_tol: 1.0 # Make sure that the plane is perpendicular to Z-axis with some degree tolerance.
+
+clustering:
+  min_size: 5
+  max_size: 300
+  tol: 0.75
+
+detection_certainty: 0.9

@@ -1,8 +1,8 @@
 %rng(r);
 %% Choose object detection probability
-P_D = 0.7;
+P_D = 0.8;
 %Choose clutter rate
-lambda_c = 500;
+lambda_c = 100;
 
 %Choose linear or nonlinear scenario
 scenario_type = 'linear';
@@ -44,25 +44,31 @@ my_measdata = measdatagen(my_objectdata,sensor_model,meas_model);
 P_G = 0.999;            %gating size in percentage
 w_min = 1e-3;           %hypothesis pruning threshold
 merging_threshold = 2;  %hypothesis merging threshold
-M = 100;                %maximum number of hypotheses kept in TOMHT
+M = 20;                %maximum number of hypotheses kept in TOMHT
 density_class_handle = feval(@GaussianDensity);    %density class handle
 tracker = n_objectracker();
 tracker = tracker.initialize(density_class_handle,P_G,meas_model.d,w_min,merging_threshold,M);
 
 %Global Nearest Neighbour Estimation
+tic
 my_GNNestimates = GNNfilter(tracker, initial_state, my_measdata, sensor_model, motion_model, meas_model);
-GNN_RMSE = RMSE_n_objects(my_GNNestimates,my_objectdata.X);
+toc
+my_GNN_RMSE = RMSE_n_objects(my_GNNestimates,my_objectdata.X);
 
 % Joint Probabilistic Data Association Estimation
+tic
 my_JPDAestimates = JPDAfilter(tracker, initial_state, my_measdata, sensor_model, motion_model, meas_model);
-JPDA_RMSE = RMSE_n_objects(my_JPDAestimates,my_objectdata.X);
+toc
+my_JPDA_RMSE = RMSE_n_objects(my_JPDAestimates,my_objectdata.X);
 
 % TO-MHT Estimation
+tic
 my_TOMHTestimates = TOMHT(tracker, initial_state, my_measdata, sensor_model, motion_model, meas_model);
-TOMHT_RMSE = RMSE_n_objects(my_TOMHTestimates,my_objectdata.X);
+toc
+my_TOMHT_RMSE = RMSE_n_objects(my_TOMHTestimates,my_objectdata.X);
 
 X = sprintf('Root mean square error: GNN: %.3f; JPDA: %.3f; TOMHT: %.3f.'...
-    ,GNN_RMSE,JPDA_RMSE,TOMHT_RMSE);
+    ,my_GNN_RMSE,my_JPDA_RMSE,my_TOMHT_RMSE);
 disp(X)
 
 figure

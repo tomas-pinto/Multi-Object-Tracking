@@ -1,0 +1,27 @@
+# Probability that a hypothesis survives
+survival_probability: 0.99 
+
+# Noise modelled as a Poisson Point Process
+sensor_model:
+  min_range: -100 # max value that noise can take
+  max_range: 100 # max value that noise can take
+  clutter_rate: 100 # average number of noisy measurements
+
+motion_model: # Constant velocity motion model
+  sampling_time: 0.1
+  covariance: 5
+
+measurement_model: # Linear
+  covariance: 2
+
+birth_model: # Single Gaussian density centered in the frame origin
+  weight: 0.03
+  covariance: 400
+  detection_prob: 0.999 # Non-occlusion probability of birth model
+
+GM_PHD_tracker:
+  gating_size: 9.2103 # use MATLAB chi2inv(P,V), where P (0.99) is percentage inside gate and V is 2 (dimensionality of measurement vector)
+  w_min: 0.001 # pruning threshold
+  max_h: 100 # maximum number of hypotheses
+
+

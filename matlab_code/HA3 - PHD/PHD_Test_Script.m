@@ -61,7 +61,7 @@ tracker = multiobjectracker();
 tracker = tracker.initialize(density_class_handle,P_S,P_G,meas_model.d,w_min,merging_threshold,M);
 
 %GM-PHD filter
-GMPHDestimates = GMPHDfilter(tracker, birth_model, measdata, sensor_model, motion_model, meas_model);
+GMPHDestimates = GMPHDfilter(tracker, birth_model, measdata2, sensor_model, motion_model, meas_model);
 
 %Trajectory plot
 true_state = cell2mat(objectdata.X');
@@ -71,9 +71,9 @@ figure
 hold on
 grid on
 
-h1 = plot(true_state(1,:), true_state(2,:), 'bo', 'Linewidth', 1);
+%h1 = plot(true_state(1,:), true_state(2,:), 'bo', 'Linewidth', 1);
 h2 = plot(GMPHD_estimated_state(1,:), GMPHD_estimated_state(2,:), 'r+', 'Linewidth', 1);
 
 xlabel('x (m)'); ylabel('y (m)')
-legend([h1 h2],'Ground Truth','PHD Estimates', 'Location', 'best')
-set(gca,'FontSize',12) 
+%legend([h1, h2],'Ground Truth','PHD Estimates', 'Location', 'best')
+%set(gca,'FontSize',12) 

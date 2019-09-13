@@ -95,13 +95,13 @@ classdef n_objectracker
                 
                 % Set non-diagonal elements to infinity and diagonal to the
                 % likelihood of misdetection
-                misdetect_cost = -Inf * ones(n,n);
+                misdetect_cost = Inf * ones(n,n);
                 diag_index = eye(size(misdetect_cost)) == 1;
-                misdetect_cost(diag_index) = log(1 - sensormodel.P_D);
+                misdetect_cost(diag_index) = -log(1 - sensormodel.P_D);
                 
                 % Create Detection cost matrix
                 % Dimensions: [number_objects] * [number_measurements]
-                detect_cost = -Inf * ones(n,m);
+                detect_cost = Inf * ones(n,m);
                 
                 for o = 1:n % For each object
                     %Perform Gating
@@ -112,7 +112,7 @@ classdef n_objectracker
                         %Calculate the predicted likelihood for each measurement in the gate
                         predicted_likelihood = obj.density.predictedLikelihood(states(o),z_ingate,measmodel);
                         %Update detection cost matrix
-                        detect_cost(o,ind) = log(sensormodel.P_D)-log(sensormodel.intensity_c)+predicted_likelihood;
+                        detect_cost(o,ind) = -log(sensormodel.P_D)+log(sensormodel.intensity_c)-predicted_likelihood;
                     end
                 end
                 
@@ -120,12 +120,12 @@ classdef n_objectracker
                 C = [detect_cost misdetect_cost];
                 
                 % Solve Assignment Problem using Gibbs Sampling
-                %numIteration = 10;
-                %k = 1;
-                %[col4row,~]= assign2DByGibbs(C,numIteration,k);
+                numIteration = 10;
+                k = 1;
+                [col4row,~]= assign2DByGibbs(C,numIteration,k);
                 
                 %[col4row,~,~] = assign2D(C);
-                [col4row, ~, ~, ~, ~] = assign2DByCol(C,true);
+                %[col4row, ~, ~, ~, ~] = assign2DByCol(C,100,1);
                 
                 % For each object 
                 for o = 1:n
@@ -209,10 +209,10 @@ classdef n_objectracker
                 C = [detect_cost misdetect_cost];
                 
                 % Solve Assignment Problem using Gibbs Sampling
-                %numIteration = 200;
+                numIteration = 100;
                 k = obj.reduction.M;
-                %[col4rowBest,gainBest] = assign2DByGibbs(C,numIteration,k);
-                [col4rowBest,row4colBest,gainBest] = kBest2DAssign(C,k);
+                [col4rowBest,gainBest] = assign2DByGibbs(C,numIteration,k);
+                %[col4rowBest,row4colBest,gainBest] = kBest2DAssign(C,k);
                 
                 %Normalise the weights of different data association hypotheses
                 w = normalizeLogWeights(-gainBest);
@@ -335,10 +335,10 @@ classdef n_objectracker
                     C = [detect_cost misdetect_cost];
                     
                     % Solve Assignment Problem
-                    %numIteration = 200;
+                    numIteration = 100;
                     k = ceil(exp(w(h))*obj.reduction.M);
-                    %[col4rowBest,gainBest] = assign2DByGibbs(C,numIteration,k);
-                    [col4rowBest,~,gainBest] = kBest2DAssign(C,k);
+                    [col4rowBest,gainBest] = assign2DByGibbs(C,numIteration,k);
+                    %[col4rowBest,~,gainBest] = kBest2DAssign(C,k);
                     
                     % Assign all misdetections to zero and update global
                     % lookup table

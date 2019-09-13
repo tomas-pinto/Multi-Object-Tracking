@@ -101,7 +101,11 @@ classdef PHDfilter
                         
                         lookup_table(index) = look_ind(i);
                         
+                        %if sum(obj.paras.states(h).x == 4)
+                            %detected(index) = z_ingate(:,i);
+                        %else
                         detected(index) = obj.density.update(obj.paras.states(h), z_ingate(:,i), measmodel);
+                        %end
                         
                         index = index + 1;
                     end
@@ -130,9 +134,9 @@ classdef PHDfilter
             %Pruning
             [obj.paras.w, obj.paras.states] = hypothesisReduction.prune(obj.paras.w, obj.paras.states, reduction.w_min);
             %Merging
-            if length(obj.paras.w) > 1
-                [obj.paras.w, obj.paras.states] = hypothesisReduction.merge(obj.paras.w, obj.paras.states, reduction.merging_threshold, obj.density);
-            end
+            %if length(obj.paras.w) > 1
+                %[obj.paras.w, obj.paras.states] = hypothesisReduction.merge(obj.paras.w, obj.paras.states, reduction.merging_threshold, obj.density);
+            %end
             %Capping
             [obj.paras.w, obj.paras.states] = hypothesisReduction.cap(obj.paras.w, obj.paras.states, reduction.M);
         end

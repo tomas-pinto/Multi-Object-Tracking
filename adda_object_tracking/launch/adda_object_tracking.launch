@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <node name="lidar_detection_node" pkg="adda_lidar_detection" type="lidar_detection_node" respawn="true" output="screen">
+    <rosparam command="load" file ="$(find adda_lidar_detection)/config/lidar_detection_config.yaml"/>
+  </node>
+
+  <node name="adda_object_tracking_node" pkg="adda_object_tracking" type="adda_object_tracking_node" respawn="true" output="screen">
+    <rosparam command="load" file ="$(find adda_object_tracking)/config/GM_PHD_config.yaml"/>
+  </node>
+  
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find adda_object_tracking)/config/tracking_rviz.rviz"/>
+
+</launch>

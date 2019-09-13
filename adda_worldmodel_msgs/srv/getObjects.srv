@@ -1,0 +1,5 @@
+#Request Type
+string object_type # if empty return all 
+---
+#Response Type
+adda_worldmodel_msgs/Objects objects #
