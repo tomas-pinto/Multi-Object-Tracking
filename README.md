@@ -1,20 +1,11 @@
 # Adda Worldmodel Server
 
-The Worldmodel server includes 3 packages, namely adda_object_tracking, adda_worldmodel_msgs and dummy_percepts
+The Worldmodel server includes 3 packages, namely adda_object_tracking, adda_worldmodel_msgs and adda_lidar_detection.
 
-to install in the adda workspace run
-
-```  
-adda install worldmodel
-adda update
-adda make
+## How to run it?
 
 ```  
-
-
-to see a demonstration launch
-
-```  
-roslaunch adda_object_tracking demo.launch
+rosbag play <name of rosbag file from kitti2bag>
+roslaunch adda_object_tracking adda_object_tracking.launch
 
 ```  
