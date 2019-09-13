@@ -1,6 +1,8 @@
 # aDDa Lidar Detection package
 Adaptation of Autoware euclidian lidar detection package.
 
+<img src="lidar_detection.png"/>
+
 ## How to run?
 ```  
 rosbag play <name of rosbag file from kitti2bag>
